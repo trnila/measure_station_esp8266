@@ -1,12 +1,12 @@
-#define DHT_PIN 4
+#define DHT_PIN 0
 #define DHT_SENSOR_TYPE DHT_TYPE_DHT22
 
-#define FAN_PIN 14
+#define FAN_PIN 15
 
-#define DUST_LED_PIN 5 
+#define DUST_LED_PIN 2 
 
-#define SCL_PIN 13
-#define SDA_PIN 12
+#define SCL_PIN 5
+#define SDA_PIN 4
 #define I2C_BUS 0
 
 
