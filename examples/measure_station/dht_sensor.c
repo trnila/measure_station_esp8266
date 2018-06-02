@@ -1,7 +1,3 @@
-/* 
- *
- * This sample code is in the public domain.
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include "espressif/esp_common.h"
@@ -9,7 +5,15 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include <dht/dht.h>
-#include "esp8266.h"
+#include <semphr.h>
+#include <memory.h>
+#include <string.h>
+#include <stdarg.h>
+#include <utils.h>
+
+#include "mqtt.h"
+#include "wifi.h"
+
 
 /* An example using the ubiquitous DHT** humidity sensors
  * to read and print a new temperature and humidity measurement
@@ -33,6 +37,9 @@ void dhtMeasurementTask(void *pvParameters)
             printf("Humidity: %d%% Temp: %dC\n", 
                     humidity / 10, 
                     temperature / 10);
+
+			publish("measure_station/temperature", "%d", temperature / 10);
+			publish("measure_station/humidity", "%d", humidity / 10);
         } else {
             printf("Could not read data from sensor\n");
         }
@@ -93,18 +100,27 @@ void dustTask(void* args) {
 
 
 		int my_pm = pm;
-		float computed = 0.17 * my_pm - 0.1;
+		int computed = 0.17 * my_pm - 0.1;
 
+		publish("measure_station/dust", "%d", computed);
 
 		printf("PM %d %f\n", my_pm, computed);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 }
 
-void user_init(void)
-{
+
+
+void user_init(void) {
     uart_set_baud(0, 115200);
+
+    vSemaphoreCreateBinary(wifi_alive);
+
+	mqtt_init();
+
     xTaskCreate(dhtMeasurementTask, "dhtMeasurementTask", 256, NULL, 2, NULL);
     xTaskCreate(dustTask, "dustTask", 256, NULL, 2, NULL);
+    xTaskCreate(wifi_task, "wifi_task",  256, NULL, 2, NULL);
+    xTaskCreate(mqtt_task, "mqtt_task",  768, NULL, 2, NULL);
 }
 
