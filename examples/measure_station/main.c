@@ -7,6 +7,7 @@
 
 void dht_task(void *args);
 void dust_task(void *args);
+void bh1750_task(void *args);
 
 void user_init(void) {
     uart_set_baud(0, 115200);
@@ -18,6 +19,7 @@ void user_init(void) {
 
     xTaskCreate(dht_task, "dht_task", 256, NULL, 2, NULL);
     xTaskCreate(dust_task, "dust_Task", 256, NULL, 2, NULL);
+    xTaskCreate(bh1750_task, "bh1750_task", 256, NULL, 2, NULL);
     xTaskCreate(fan_task, "fan_task",  256, NULL, 2, NULL);
     xTaskCreate(wifi_task, "wifi_task",  256, NULL, 2, NULL);
     xTaskCreate(mqtt_task, "mqtt_task",  768, NULL, 2, NULL);

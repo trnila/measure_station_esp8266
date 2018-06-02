@@ -5,6 +5,10 @@
 
 #define DUST_LED_PIN 5 
 
+#define SCL_PIN 13
+#define SDA_PIN 12
+#define I2C_BUS 0
+
 
 #define MQTT_HOST ("172.20.6.33")
 #define MQTT_PORT 1883
@@ -12,3 +16,5 @@
 #define MQTT_PASS NULL
 #define MQTT_CLIENT_ID "measure-station"
 #define MQTT_BASE_TOPIC "measure_station/"
+
+
