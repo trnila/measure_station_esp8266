@@ -1,14 +1,14 @@
 #include <ssid_config.h>
 #include <stdint.h>
-#include "esp8266.h"
-#include "espressif/esp_common.h"
-#include "FreeRTOS.h"
+#include <esp8266.h>
+#include <espressif/esp_common.h>
+#include <FreeRTOS.h>
 #include <semphr.h>
-#include "task.h"
+#include <task.h>
 
 SemaphoreHandle_t wifi_alive;
 
-void  wifi_task(void *pvParameters) {
+void wifi_task(void *args) {
     uint8_t status  = 0;
     uint8_t retries = 30;
     struct sdk_station_config config = {
@@ -22,7 +22,7 @@ void  wifi_task(void *pvParameters) {
     sdk_wifi_station_set_config(&config);
 
     for(;;) {
-        while ((status != STATION_GOT_IP) && (retries)){
+        while ((status != STATION_GOT_IP) && (retries)) {
             status = sdk_wifi_station_get_connect_status();
             printf("%s: status = %d\n\r", __func__, status );
             if( status == STATION_WRONG_PASSWORD ){

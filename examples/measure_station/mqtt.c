@@ -1,14 +1,13 @@
 #include <stdarg.h>
 #include <string.h>
+#include <FreeRTOS.h>
+#include <task.h>
+#include <semphr.h>
 #include <paho_mqtt_c/MQTTClient.h>
 #include <paho_mqtt_c/MQTTESP8266.h>
-#include "FreeRTOS.h"
-#include "utils.h"
-#include <semphr.h>
-#include "wifi.h"
 #include "config.h"
-#include "task.h"
-
+#include "utils.h"
+#include "wifi.h"
 
 typedef struct {
 	char topic[64];
@@ -38,51 +37,49 @@ void publish(const char* topic, const char* msg_fmt, ...) {
 	vsnprintf(msg.payload, sizeof(msg.payload), msg_fmt, va);
 
 	if(xQueueSend(publish_queue, &msg, portMAX_DELAY) != pdTRUE) {
-		panic("could not publish to mqtt queue");
+		printf("ERROR: could not publish to mqtt queue");
 	}
 
 	va_end(va);
 }
 
-void  mqtt_task(void *pvParameters) {
-    int ret         = 0;
+void mqtt_task(void *args) {
+    int ret = 0;
     struct mqtt_network network;
-    mqtt_client_t client   = mqtt_client_default;
-    char mqtt_client_id[20];
+    mqtt_client_t client = mqtt_client_default;
     uint8_t mqtt_buf[100];
     uint8_t mqtt_readbuf[100];
     mqtt_packet_connect_data_t data = mqtt_packet_connect_data_initializer;
-
     mqtt_network_new( &network );
-    memset(mqtt_client_id, 0, sizeof(mqtt_client_id));
-    strcpy(mqtt_client_id, "ESP-");
-    strcat(mqtt_client_id, "station");//get_my_id());
 
-    while(1) {
+    for(;;) {
         xSemaphoreTake(wifi_alive, portMAX_DELAY);
         printf("%s: started\n\r", __func__);
-        printf("%s: (Re)connecting to MQTT server %s ... ",__func__,
-               MQTT_HOST);
+        printf("%s: (Re)connecting to MQTT server %s ... ",__func__, MQTT_HOST);
         ret = mqtt_network_connect(&network, MQTT_HOST, MQTT_PORT);
-        if( ret ){
+        if(ret) {
             printf("connect error: %d\n\r", ret);
             taskYIELD();
             continue;
         }
-        printf("done\n\r");
-        mqtt_client_new(&client, &network, 5000, mqtt_buf, 100,
-                      mqtt_readbuf, 100);
 
-        data.willFlag       = 0;
-        data.MQTTVersion    = 4;
-        data.clientID.cstring   = mqtt_client_id;
-        data.username.cstring   = MQTT_USER;
-        data.password.cstring   = MQTT_PASS;
+        printf("connected to mqtt\n\r");
+        mqtt_client_new(
+				&client, &network, 5000,
+				mqtt_buf, sizeof(mqtt_buf),
+				mqtt_readbuf, sizeof(mqtt_readbuf)
+		);
+
+        data.willFlag = 0;
+        data.MQTTVersion = 4;
+        data.clientID.cstring = MQTT_CLIENT_ID;
+        data.username.cstring = MQTT_USER;
+        data.password.cstring = MQTT_PASS;
         data.keepAliveInterval  = 10;
-        data.cleansession   = 0;
-        printf("Send MQTT connect ... ");
+        data.cleansession = 0;
+        printf("Send MQTT connect ... \n\r");
         ret = mqtt_connect(&client, &data);
-        if(ret){
+        if(ret) {
             printf("send mqtt error: %d\n\r", ret);
             mqtt_network_disconnect(&network);
             taskYIELD();
@@ -92,28 +89,10 @@ void  mqtt_task(void *pvParameters) {
 //        mqtt_subscribe(&client, "/esptopic", MQTT_QOS1, topic_received);
         xQueueReset(publish_queue);
 
-/*
-		int i = 0;
-	for(;;) {
-				const char msg[10];
-				snprintf(msg, sizeof(msg), "ahoj%d\n", i++);
-                mqtt_message_t message;
-                message.payload = msg;
-                message.payloadlen = PUB_MSG_LEN;
-                message.dup = 0;
-                message.qos = MQTT_QOS1;
-                message.retained = 0;
-                ret = mqtt_publish(&client, "/danitest", &message);
-
-        vTaskDelay( 1000 / portTICK_PERIOD_MS );
-
-	}
-*/
-
-        while(1){
+        for(;;) {
 			Message msg;
             while(xQueueReceive(publish_queue, &msg, 0) == pdTRUE) {
-                printf("got message to publish\r\n");
+                printf("got message to publish on topic %s\r\n", msg.topic);
                 mqtt_message_t message;
                 message.payload = msg.payload;
                 message.payloadlen = strlen(msg.payload);
@@ -121,7 +100,7 @@ void  mqtt_task(void *pvParameters) {
                 message.qos = MQTT_QOS1;
                 message.retained = 0;
                 ret = mqtt_publish(&client, msg.topic, &message);
-                if (ret != MQTT_SUCCESS ){
+                if(ret != MQTT_SUCCESS ) {
                     printf("error while publishing message: %d\n", ret );
                     break;
                 }
