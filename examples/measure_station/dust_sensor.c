@@ -19,7 +19,7 @@ void dust_task(void* args) {
 		taskEXIT_CRITICAL();
 
 		int computed = 0.17 * pm - 0.1;
-		publish(MQTT_TOPIC("dust"), "%d", computed);
+		publish(MQTT_TOPIC("dust"), 0, "%d", computed);
 		printf("dust %d %d\n", pm, computed);
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);

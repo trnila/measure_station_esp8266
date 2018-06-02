@@ -1,6 +1,7 @@
 #define DHT_PIN 4
 #define DHT_SENSOR_TYPE DHT_TYPE_DHT22
 
+#define FAN_PIN 14
 
 #define DUST_LED_PIN 5 
 
