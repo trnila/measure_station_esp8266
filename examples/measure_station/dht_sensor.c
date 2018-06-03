@@ -7,6 +7,7 @@
 #include <dht/dht.h>
 #include "config.h"
 #include "mqtt.h"
+#include "utils.h"
 
 void dht_task(void *args) {
     // DHT sensors that come mounted on a PCB generally have
@@ -19,12 +20,12 @@ void dht_task(void *args) {
 		int16_t humidity = 0;
 
         if (dht_read_data(DHT_SENSOR_TYPE, DHT_PIN, &humidity, &temperature)) {
-            printf("Humidity: %d%% Temp: %dC\n", humidity / 10, temperature / 10);
+            debug("Humidity: %d%% Temp: %dC", humidity / 10, temperature / 10);
 
 			publish(MQTT_TOPIC("temperature"), 0, "%d", temperature / 10);
 			publish(MQTT_TOPIC("humidity"), 0, "%d", humidity / 10);
         } else {
-            printf("Could not read data from sensor\n");
+            debug("Could not read data from sensor");
         }
 
         vTaskDelay(3000 / portTICK_PERIOD_MS);

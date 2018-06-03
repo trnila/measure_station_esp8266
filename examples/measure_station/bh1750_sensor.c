@@ -7,6 +7,7 @@
 #include <bh1750/bh1750.h>
 #include "mqtt.h"
 #include "config.h"
+#include "utils.h"
 
 void bh1750_task(void *args) {
     i2c_init(I2C_BUS, SCL_PIN, SDA_PIN, I2C_FREQ_100K);
@@ -19,7 +20,7 @@ void bh1750_task(void *args) {
 
     for(;;) {
 		int lux = bh1750_read(&dev);
-		printf("Lux: %d\n", lux);
+		debug("Lux: %d", lux);
 		publish(MQTT_TOPIC("lux"), 0, "%d", lux);
 
 		vTaskDelay(2000 / portTICK_PERIOD_MS);

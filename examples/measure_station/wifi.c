@@ -5,6 +5,7 @@
 #include <FreeRTOS.h>
 #include <semphr.h>
 #include <task.h>
+#include "utils.h"
 
 SemaphoreHandle_t wifi_alive;
 
@@ -16,7 +17,7 @@ void wifi_task(void *args) {
         .password = WIFI_PASS,
     };
 
-    printf("WiFi: connecting to WiFi\n\r");
+    debug("WiFi: connecting to WiFi");
 	sdk_wifi_set_sleep_type(WIFI_SLEEP_MODEM);
     sdk_wifi_set_opmode(STATION_MODE);
     sdk_wifi_station_set_config(&config);
@@ -24,22 +25,22 @@ void wifi_task(void *args) {
     for(;;) {
         while ((status != STATION_GOT_IP) && (retries)) {
             status = sdk_wifi_station_get_connect_status();
-            printf("%s: status = %d\n\r", __func__, status );
+            debug("status = %d", status );
             if( status == STATION_WRONG_PASSWORD ){
-                printf("WiFi: wrong password\n\r");
+                debug("WiFi: wrong password");
                 break;
             } else if( status == STATION_NO_AP_FOUND ) {
-                printf("WiFi: AP not found\n\r");
+                debug("WiFi: AP not found");
                 break;
             } else if( status == STATION_CONNECT_FAIL ) {
-                printf("WiFi: connection failed\r\n");
+                debug("WiFi: connection failed");
                 break;
             }
             vTaskDelay( 1000 / portTICK_PERIOD_MS );
             --retries;
         }
         if (status == STATION_GOT_IP) {
-            printf("WiFi: Connected\n\r");
+            debug("WiFi: Connected");
             xSemaphoreGive( wifi_alive );
             taskYIELD();
         }
@@ -48,7 +49,7 @@ void wifi_task(void *args) {
             xSemaphoreGive( wifi_alive );
             taskYIELD();
         }
-        printf("WiFi: disconnected\n\r");
+        debug("WiFi: disconnected");
         sdk_wifi_station_disconnect();
         vTaskDelay( 1000 / portTICK_PERIOD_MS );
     }

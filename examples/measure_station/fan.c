@@ -54,7 +54,7 @@ void fan_task(void* arg) {
 		char state;
 		xQueueReceive(fan_queue, &state, portMAX_DELAY);
 
-		printf("fan set state to %d\n", state);
+		debug("fan set state to %d", state);
 		gpio_write(FAN_PIN, state);
 
 		if(fan_state != state) {

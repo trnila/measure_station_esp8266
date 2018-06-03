@@ -47,7 +47,7 @@ void publish(const char* topic, const int retained, const char* msg_fmt, ...) {
 	msg.retained = retained;
 
 	if(xQueueSend(publish_queue, &msg, portMAX_DELAY) != pdTRUE) {
-		printf("ERROR: could not publish to mqtt queue");
+		debug("ERROR: could not publish to mqtt queue");
 	}
 
 	va_end(va);
@@ -86,16 +86,15 @@ void mqtt_task(void *args) {
 
     for(;;) {
         xSemaphoreTake(wifi_alive, portMAX_DELAY);
-        printf("%s: started\n\r", __func__);
-        printf("%s: (Re)connecting to MQTT server %s ... ",__func__, MQTT_HOST);
+        debug("Reconnecting to MQTT server %s ... ", MQTT_HOST);
         ret = mqtt_network_connect(&network, MQTT_HOST, MQTT_PORT);
         if(ret) {
-            printf("connect error: %d\n\r", ret);
+            debug("connect error: %d", ret);
             taskYIELD();
             continue;
         }
 
-        printf("connected to mqtt\n\r");
+        debug("connected to mqtt");
         mqtt_client_new(
 				&client, &network, 5000,
 				mqtt_buf, sizeof(mqtt_buf),
@@ -109,21 +108,21 @@ void mqtt_task(void *args) {
         data.password.cstring = MQTT_PASS;
         data.keepAliveInterval  = 10;
         data.cleansession = 0;
-        printf("Send MQTT connect ... \n\r");
+        debug("Send MQTT connect ...");
         ret = mqtt_connect(&client, &data);
         if(ret) {
-            printf("send mqtt error: %d\n\r", ret);
+            debug("send mqtt error: %d", ret);
             mqtt_network_disconnect(&network);
             taskYIELD();
             continue;
         }
-        printf("done\r\n");
+        debug("done");
         xQueueReset(publish_queue);
 		
 		// register all topics
 		SubscribedTopic* topic = subscribed_topics;
 		while(topic) {
-			printf("subscribe topic %s\n", topic->topic);
+			debug("subscribe topic %s", topic->topic);
 			mqtt_subscribe(&client, topic->topic, MQTT_QOS1, topic->callback);
 			topic = topic->next; 
 		}
@@ -131,7 +130,7 @@ void mqtt_task(void *args) {
         for(;;) {
 			Message msg;
             while(xQueueReceive(publish_queue, &msg, 0) == pdTRUE) {
-                printf("got message to publish on topic %s\r\n", msg.topic);
+                debug("got message to publish on topic %s", msg.topic);
                 mqtt_message_t message;
                 message.payload = msg.payload;
                 message.payloadlen = strlen(msg.payload);
@@ -140,7 +139,7 @@ void mqtt_task(void *args) {
                 message.retained = msg.retained;
                 ret = mqtt_publish(&client, msg.topic, &message);
                 if(ret != MQTT_SUCCESS ) {
-                    printf("error while publishing message: %d\n", ret );
+                    debug("error while publishing message: %d", ret );
                     break;
                 }
             }
@@ -149,7 +148,7 @@ void mqtt_task(void *args) {
             if (ret == MQTT_DISCONNECTED)
                 break;
         }
-        printf("Connection dropped, request restart\n\r");
+        debug("Connection dropped, request restart");
         mqtt_network_disconnect(&network);
         taskYIELD();
     }
