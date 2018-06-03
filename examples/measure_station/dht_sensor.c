@@ -28,7 +28,7 @@ void dht_task(void *args) {
             debug("Could not read data from sensor");
         }
 
-        vTaskDelay(3000 / portTICK_PERIOD_MS);
+        vTaskDelay(60000 / portTICK_PERIOD_MS);
     }
 }
 

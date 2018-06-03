@@ -23,6 +23,6 @@ void dust_task(void* args) {
 		publish(MQTT_TOPIC("dust"), 0, "%d", computed);
 		debug("dust %d %d", pm, computed);
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(60000 / portTICK_PERIOD_MS);
 	}
 }

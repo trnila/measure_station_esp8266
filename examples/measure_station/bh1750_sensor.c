@@ -23,6 +23,6 @@ void bh1750_task(void *args) {
 		debug("Lux: %d", lux);
 		publish(MQTT_TOPIC("lux"), 0, "%d", lux);
 
-		vTaskDelay(2000 / portTICK_PERIOD_MS);
+		vTaskDelay(60000 / portTICK_PERIOD_MS);
     }
 }
